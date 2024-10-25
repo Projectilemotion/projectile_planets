@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/addons/p5.sound.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <meta charset="utf-8" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Prevent scrolling */
+    }
+    canvas {
+      display: block;
+    }
+    /* Style for the sliders */
+    .angle-slider {
+      background-color: red;
+      height: 12px; /* Increased height for angle slider */
+    }
+    .velocity-slider {
+      background-color: green;
+      height: 12px; /* Increased height for velocity slider */
+    }
+    .height-slider {
+      background-color: yellow;
+      height: 12px; /* Increased height for height slider */
+    }
+
+    /* Style for the slider handles */
+    .angle-slider::-webkit-slider-thumb,
+    .velocity-slider::-webkit-slider-thumb,
+    .height-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px; /* Set the width of the slider handle */
+      height: 20px; /* Set the height of the slider handle */
+      border-radius: 50%; /* Make the handle circular */
+      background: white; /* Set the color of the handle */
+      cursor: pointer;
+    }
+    .angle-slider::-moz-range-thumb,
+    .velocity-slider::-moz-range-thumb,
+    .height-slider::-moz-range-thumb {
+      width: 20px; /* Set the width of the slider handle */
+      height: 20px; /* Set the height of the slider handle */
+      border-radius: 50%; /* Make the handle circular */
+      background: white; /* Set the color of the handle */
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+  </main>
+  <script src="sketch.js"></script>
+</body>
+<script>
+  let angleSlider, velocitySlider, heightSlider, planetDropdown, massInput, radiusInput;
+  let ball;
+  let g = 9.81;
+  let G;
+  let startX, startY;
+  let previousAngle, previousVelocity, previousHeight, previousGravity;
+  let timeOfFlight, maxHeight, range;
+  let trajectoryPoints = [];
+  let isMoving = false;
+  let stars = [];
+  let numStars = 200;
+
+  function setup() {
+    createCanvas(windowWidth, windowHeight);
+    startX = 50;
+    startY = height - 50;
+
+    G = 6.67430 * pow(10, -11);
+
+    for (let i = 0; i < numStars; i++) {
+      stars.push({ x: random(width), y: random(height) });
+    }
+
+    angleSlider = createSlider(0, 90, 45);
+    angleSlider.position(width - 180, 50);
+    angleSlider.class('angle-slider');
+
+    velocitySlider = createSlider(0, 100, 50);
+    velocitySlider.position(width - 180, 100);
+    velocitySlider.class('velocity-slider');
+
+    heightSlider = createSlider(0, 300, 100);
+    heightSlider.position(width - 180, 150);
+    heightSlider.class('height-slider');
+
+    planetDropdown = createSelect();
+    planetDropdown.position(width - 180, 250);
+    planetDropdown.option('Earth', 9.81);
+    planetDropdown.option('Mars', 3.71);
+    planetDropdown.option('Jupiter', 24.79);
+    planetDropdown.option('Venus', 8.87);
+    planetDropdown.option('Moon', 1.62);
+    planetDropdown.option('Custom Planet');
+
+    massInput = createInput();
+    massInput.position(width - 180, 320);
+    massInput.hide();
+
+    radiusInput = createInput();
+    radiusInput.position(width - 180, 390);
+    radiusInput.hide();
+
+    initializeBall();
+    previousAngle = angleSlider.value();
+    previousVelocity = velocitySlider.value();
+    previousHeight = heightSlider.value();
+    previousGravity = g;
+
+    calculateTrajectory();
+    planetDropdown.changed(updateGravity);
+  }
+
+  function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    startY = height - 50;
+    initializeBall();
+  }
+
+  function initializeBall() {
+    ball = {
+      x: startX,
+      y: startY - heightSlider.value(),
+      vx: 0,
+      vy: 0,
+      ax: 0,
+      ay: g
+    };
+    trajectoryPoints = [];
+    isMoving = false;
+  }
+
+  function updateGravity() {
+    let planet = planetDropdown.value();
+    if (planet === 'Custom Planet') {
+      massInput.show();
+      radiusInput.show();
+      calculateCustomGravity();
+    } else {
+      massInput.hide();
+      radiusInput.hide();
+      g = parseFloat(planet);
+      calculateTrajectory();
+    }
+  }
+
+  function calculateCustomGravity() {
+    let mass = parseFloat(massInput.value()) * pow(10, 24);
+    let radiusInKm = parseFloat(radiusInput.value());
+    let radiusInMeters = radiusInKm * pow(10, 6);
+    
+    if (!isNaN(mass) && mass > 0 && !isNaN(radiusInKm) && radiusInKm > 0) {
+      g = (G * mass) / pow(radiusInMeters, 2);
+      calculateTrajectory();
+    } else {
+      g = 9.81;
+    }
+  }
+
+  function calculateTrajectory() {
+    let angle = radians(angleSlider.value());
+    let velocity = velocitySlider.value();
+    let initialHeight = heightSlider.value();
+    timeOfFlight = (velocity * sin(angle) + sqrt(pow(velocity * sin(angle), 2) + 2 * g * initialHeight)) / g;
+    maxHeight = initialHeight + (pow(velocity * sin(angle), 2)) / (2 * g);
+    range = (pow(velocity, 2) * sin(2 * angle)) / g * (1 + (velocity * sin(angle) / g) * timeOfFlight);
+  }
+
+  function draw() {
+    background(0);
+    drawStars();
+    drawAxes();
+
+    let angle = radians(angleSlider.value());
+    let velocity = velocitySlider.value();
+    
+    if (angleSlider.value() !== previousAngle || velocitySlider.value() !== previousVelocity || heightSlider.value() !== previousHeight || g !== previousGravity) {
+      initializeBall();
+      previousAngle = angleSlider.value();
+      previousVelocity = velocitySlider.value();
+      previousHeight = heightSlider.value();
+      previousGravity = g;
+      calculateTrajectory();
+    }
+
+    textSize(16);
+    text(`Angle: ${angleSlider.value()}°`, width - 160, 35);
+    text(`Velocity: ${velocitySlider.value()}`, width - 160, 85);
+    text(`Height: ${heightSlider.value()} m`, width - 160, 135);
+    
+    let gap = 30;
+    textSize(14);
+    text(`Time of Flight: ${timeOfFlight.toFixed(2)} s`, width - 170, 175 + gap);
+    text(`Max Height: ${maxHeight.toFixed(2)} m`, width - 170, 195 + gap);
+    text(`Range: ${range.toFixed(2)} m`, width - 170, 215 + gap);
+    
+    if (planetDropdown.value() === 'Custom Planet') {
+      text('Mass (10^24 kg):', width - 160, 310);
+      text('Radius (10^6 km):', width - 160, 380);
+      calculateCustomGravity();
+    }
+    
+    if (ball.x === startX && ball.y === (startY - heightSlider.value())) {
+      ball.vx = velocity * cos(angle);
+      ball.vy = -velocity * sin(angle);
+      isMoving = true;
+    }
+
+    if (isMoving) {
+      trajectoryPoints.push({ x: ball.x, y: ball.y });
+      ball.x += ball.vx * 0.1;
+      ball.vy += ball.ay * 0.1;
+      ball.y += ball.vy * 0.1;
+
+      let colorValue = map(ball.y, startY, startY - maxHeight, 0, 255);
+      fill(colorValue, 100, 255 - colorValue);
+      stroke(0);
+      ellipse(ball.x, ball.y, 20, 20);
+
+      if (ball.y > startY) {
+        ball.y = startY;
+        ball.vx = 0;
+        ball.vy = 0;
+        isMoving = false;
+      }
+    }
+    
+    noFill();
+    stroke(150);
+    beginShape();
+    for (let point of trajectoryPoints) {
+      vertex(point.x, point.y);
+    }
+    endShape();
+  }
+
+  function drawAxes() {
+    stroke(255);
+    line(0, startY, width, startY);
+    line(startX, 0, startX, height);
+    fill(255);
+    text('X', width - 20, startY - 10);
+    text('Y', startX - 20, 20);
+  }
+
+  function drawStars() {
+    noStroke();
+    fill(255);
+    for (let star of stars) {
+      ellipse(star.x, star.y, 2, 2);
+    }
+  }
+</script>
+</html>
