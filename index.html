@@ -17,63 +17,44 @@
     /* Style for the sliders */
     .angle-slider {
       background-color: red;
-      height: 12px; /* Increased height for angle slider */
+      height: 12px;
     }
     .velocity-slider {
       background-color: green;
-      height: 12px; /* Increased height for velocity slider */
+      height: 12px;
     }
-    .height-slider {
-      background-color: yellow;
-      height: 12px; /* Increased height for height slider */
-    }
-
     /* Style for the slider handles */
     .angle-slider::-webkit-slider-thumb,
-    .velocity-slider::-webkit-slider-thumb,
-    .height-slider::-webkit-slider-thumb {
+    .velocity-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 20px; /* Set the width of the slider handle */
-      height: 20px; /* Set the height of the slider handle */
-      border-radius: 50%; /* Make the handle circular */
-      background: white; /* Set the color of the handle */
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
       cursor: pointer;
     }
     .angle-slider::-moz-range-thumb,
-    .velocity-slider::-moz-range-thumb,
-    .height-slider::-moz-range-thumb {
-      width: 20px; /* Set the width of the slider handle */
-      height: 20px; /* Set the height of the slider handle */
-      border-radius: 50%; /* Make the handle circular */
-      background: white; /* Set the color of the handle */
+    .velocity-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
       cursor: pointer;
     }
-  .angle-slider .ui-slider-handle {
-    background: red !important;
-  }
-  .velocity-slider .ui-slider-handle {
-    background: green !important;
-  }
-  .height-slider .ui-slider-handle {
-    background: blue !important;
-  }
-</style>
-
   </style>
 </head>
 <body>
-  <main>
-  </main>
+  <main></main>
   <script src="sketch.js"></script>
 </body>
 <script>
-  let angleSlider, velocitySlider, heightSlider, planetDropdown, massInput, radiusInput;
+  let angleSlider, velocitySlider, planetDropdown, massInput, radiusInput;
   let ball;
   let g = 9.81;
   let G;
   let startX, startY;
-  let previousAngle, previousVelocity, previousHeight, previousGravity;
+  let previousAngle, previousVelocity, previousGravity;
   let timeOfFlight, maxHeight, range;
   let trajectoryPoints = [];
   let isMoving = false;
@@ -96,15 +77,11 @@
     angleSlider.class('angle-slider');
 
     velocitySlider = createSlider(0, 100, 50);
-    velocitySlider.position(width - 180, 100);
+    velocitySlider.position(width - 180, 120);
     velocitySlider.class('velocity-slider');
 
-    heightSlider = createSlider(0, 300, 100);
-    heightSlider.position(width - 180, 150);
-    heightSlider.class('height-slider');
-
     planetDropdown = createSelect();
-    planetDropdown.position(width - 180, 250);
+    planetDropdown.position(width - 180, 190);
     planetDropdown.option('Earth', 9.81);
     planetDropdown.option('Mars', 3.71);
     planetDropdown.option('Jupiter', 24.79);
@@ -113,17 +90,16 @@
     planetDropdown.option('Custom Planet');
 
     massInput = createInput();
-    massInput.position(width - 180, 320);
+    massInput.position(width - 180, 270);
     massInput.hide();
 
     radiusInput = createInput();
-    radiusInput.position(width - 180, 390);
+    radiusInput.position(width - 180, 340);
     radiusInput.hide();
 
     initializeBall();
     previousAngle = angleSlider.value();
     previousVelocity = velocitySlider.value();
-    previousHeight = heightSlider.value();
     previousGravity = g;
 
     calculateTrajectory();
@@ -139,7 +115,7 @@
   function initializeBall() {
     ball = {
       x: startX,
-      y: startY - heightSlider.value(),
+      y: startY,
       vx: 0,
       vy: 0,
       ax: 0,
@@ -179,10 +155,9 @@
   function calculateTrajectory() {
     let angle = radians(angleSlider.value());
     let velocity = velocitySlider.value();
-    let initialHeight = heightSlider.value();
-    timeOfFlight = (velocity * sin(angle) + sqrt(pow(velocity * sin(angle), 2) + 2 * g * initialHeight)) / g;
-    maxHeight = initialHeight + (pow(velocity * sin(angle), 2)) / (2 * g);
-    range = (pow(velocity, 2) * sin(2 * angle)) / g * (1 + (velocity * sin(angle) / g) * timeOfFlight);
+    timeOfFlight = (2 * velocity * sin(angle)) / g;
+    maxHeight = (pow(velocity * sin(angle), 2)) / (2 * g);
+    range = (pow(velocity, 2) * sin(2 * angle)) / g;
   }
 
   function draw() {
@@ -192,34 +167,33 @@
 
     let angle = radians(angleSlider.value());
     let velocity = velocitySlider.value();
-    
-    if (angleSlider.value() !== previousAngle || velocitySlider.value() !== previousVelocity || heightSlider.value() !== previousHeight || g !== previousGravity) {
+
+    if (angleSlider.value() !== previousAngle || velocitySlider.value() !== previousVelocity || g !== previousGravity) {
       initializeBall();
       previousAngle = angleSlider.value();
       previousVelocity = velocitySlider.value();
-      previousHeight = heightSlider.value();
       previousGravity = g;
       calculateTrajectory();
     }
 
     textSize(16);
+    fill(255);
     text(`Angle: ${angleSlider.value()}°`, width - 160, 35);
-    text(`Velocity: ${velocitySlider.value()}`, width - 160, 85);
-    text(`Height: ${heightSlider.value()} m`, width - 160, 135);
-    
-    let gap = 30;
+    text(`Velocity: ${velocitySlider.value()}`, width - 160, 105);
+
+    let gap = 40;
     textSize(14);
-    text(`Time of Flight: ${timeOfFlight.toFixed(2)} s`, width - 170, 175 + gap);
-    text(`Max Height: ${maxHeight.toFixed(2)} m`, width - 170, 195 + gap);
-    text(`Range: ${range.toFixed(2)} m`, width - 170, 215 + gap);
-    
+    text(`Time of Flight: ${timeOfFlight.toFixed(2)} s`, width - 170, 145 + gap);
+    text(`Max Height: ${maxHeight.toFixed(2)} m`, width - 170, 165 + gap);
+    text(`Range: ${range.toFixed(2)} m`, width - 170, 185 + gap);
+
     if (planetDropdown.value() === 'Custom Planet') {
-      text('Mass (10^24 kg):', width - 160, 310);
-      text('Radius (10^6 km):', width - 160, 380);
+      text('Mass (10^24 kg):', width - 160, 270);
+      text('Radius (10^6 km):', width - 160, 340);
       calculateCustomGravity();
     }
-    
-    if (ball.x === startX && ball.y === (startY - heightSlider.value())) {
+
+    if (ball.x === startX && ball.y === startY) {
       ball.vx = velocity * cos(angle);
       ball.vy = -velocity * sin(angle);
       isMoving = true;
@@ -243,7 +217,7 @@
         isMoving = false;
       }
     }
-    
+
     noFill();
     stroke(150);
     beginShape();
