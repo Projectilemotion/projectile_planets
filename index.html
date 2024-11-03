@@ -6,23 +6,38 @@
   <link rel="stylesheet" type="text/css" href="style.css">
   <meta charset="utf-8" />
   <style>
+   /* General page and canvas styling */
     html, body {
       margin: 0;
       padding: 0;
       overflow: hidden; /* Prevent scrolling */
     }
+
     canvas {
       display: block;
     }
+
     /* Style for the sliders */
     .angle-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 150px;
+      height: 12px;
       background-color: red;
-      height: 12px;
+      outline: none;
+      border-radius: 5px;
     }
+
     .velocity-slider {
-      background-color: green;
+      -webkit-appearance: none;
+      appearance: none;
+      width: 150px;
       height: 12px;
+      background-color: green;
+      outline: none;
+      border-radius: 5px;
     }
+
     /* Style for the slider handles */
     .angle-slider::-webkit-slider-thumb,
     .velocity-slider::-webkit-slider-thumb {
@@ -34,6 +49,7 @@
       background: white;
       cursor: pointer;
     }
+
     .angle-slider::-moz-range-thumb,
     .velocity-slider::-moz-range-thumb {
       width: 20px;
@@ -66,7 +82,7 @@
     startX = 50;
     startY = height - 50;
 
-    G = 6.67430 * pow(10, -11);
+    G = 6.67430 * Math.pow(10, -11);
 
     for (let i = 0; i < numStars; i++) {
       stars.push({ x: random(width), y: random(height) });
@@ -81,7 +97,7 @@
     velocitySlider.class('velocity-slider');
 
     planetDropdown = createSelect();
-    planetDropdown.position(width - 180, 190);
+    planetDropdown.position(width - 180, 310); // Positioned below gravity display
     planetDropdown.option('Earth', 9.81);
     planetDropdown.option('Mars', 3.71);
     planetDropdown.option('Jupiter', 24.79);
@@ -90,11 +106,11 @@
     planetDropdown.option('Custom Planet');
 
     massInput = createInput();
-    massInput.position(width - 180, 270);
+    massInput.position(width - 180, 370); // Positioned closer to the mass label
     massInput.hide();
 
     radiusInput = createInput();
-    radiusInput.position(width - 180, 340);
+    radiusInput.position(width - 180, 440); // Positioned further down to avoid overlap
     radiusInput.hide();
 
     initializeBall();
@@ -140,15 +156,23 @@
   }
 
   function calculateCustomGravity() {
-    let mass = parseFloat(massInput.value()) * pow(10, 24);
+    let mass = parseFloat(massInput.value()) * Math.pow(10, 24); // Convert mass to kilograms
     let radiusInKm = parseFloat(radiusInput.value());
-    let radiusInMeters = radiusInKm * pow(10, 6);
-    
+    let radiusInMeters = radiusInKm * Math.pow(10, 6); // Convert radius to meters
+
     if (!isNaN(mass) && mass > 0 && !isNaN(radiusInKm) && radiusInKm > 0) {
-      g = (G * mass) / pow(radiusInMeters, 2);
+      g = (G * mass) / Math.pow(radiusInMeters, 2);
+
+      // Restrict gravity to a realistic range
+      if (g > 25) {
+        g = 25;
+      } else if (g < 1) {
+        g = 1;
+      }
+
       calculateTrajectory();
     } else {
-      g = 9.81;
+      g = 9.81; // Default gravity if inputs are invalid
     }
   }
 
@@ -156,8 +180,8 @@
     let angle = radians(angleSlider.value());
     let velocity = velocitySlider.value();
     timeOfFlight = (2 * velocity * sin(angle)) / g;
-    maxHeight = (pow(velocity * sin(angle), 2)) / (2 * g);
-    range = (pow(velocity, 2) * sin(2 * angle)) / g;
+    maxHeight = (Math.pow(velocity * sin(angle), 2)) / (2 * g);
+    range = (Math.pow(velocity, 2) * sin(2 * angle)) / g;
   }
 
   function draw() {
@@ -186,10 +210,11 @@
     text(`Time of Flight: ${timeOfFlight.toFixed(2)} s`, width - 170, 145 + gap);
     text(`Max Height: ${maxHeight.toFixed(2)} m`, width - 170, 165 + gap);
     text(`Range: ${range.toFixed(2)} m`, width - 170, 185 + gap);
+    text(`Gravity: ${g.toFixed(2)} m/s²`, width - 160, 225 + gap); 
 
     if (planetDropdown.value() === 'Custom Planet') {
-      text('Mass (10^24 kg):', width - 160, 270);
-      text('Radius (10^6 km):', width - 160, 340);
+      text('Mass (10^24 kg):', width - 160, 355); // Moved closer to mass input
+      text('Radius (10^6 km):', width - 160, 425); // Positioned closer to radius input
       calculateCustomGravity();
     }
 
